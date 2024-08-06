@@ -5,46 +5,31 @@ from util.routines import *
 
 class Bot(BotCommandAgent):
     # This function runs every in-game tick (every time the game updates anything)
-    is_defending = False
-    is_attacking = False
-    is_kickoff = True
-    current_state = None
     
     def run(self):
-        # Kick off 
+        if self.intent is not None:
+            return
+        
+        d1 = abs(self.ball.location.y - self.foe_goal.location.y)
+        d2 = abs(self.me.location.y - self.foe_goal.location.y)
+        is_in_front_of_ball = d1 > d2
+
+        df1 = abs(self.ball.location.y - self.friend_goal.location.y)
+        df2 = abs(self.me.location.y - self.foe_goal.location.y)
+        is_defending = df1 < 200
 
         if self.kickoff_flag:
-            is_kickoff = True
-            self.set_intent(goto(self.ball.location))
             self.set_intent(kickoff())
             return
-        else:
-            is_kickoff = False
-
-        # Check Ball location and base intent off of it
-        if self.ball.location.y <= 600 and self.ball.location.y >= -600:
-            is_attacking = True
-            is_defending = False
-        else:
-            is_defending = True
-            is_attacking = False
-        
-        #print(dir(self))
-        
-        # Attacking Routines
-        if is_attacking:
-            self.set_intent(atba())
-
-
-        # Defending Routines
         if is_defending:
+            ball_x = self.ball.location.x
+            ball_z = self.ball.location.z
+            destination = Vector3(ball_x,df1-df2,ball_z)
+            self.set_intent(goto(destination))
+        if is_in_front_of_ball:
             self.set_intent(goto(self.friend_goal.location))
+            return
+        self.set_intent(short_shot(self.foe_goal.location))
+        print(is_defending)
+
         
-        if is_defending == True:
-            current_state = 'Defending'
-        elif is_attacking == True:
-            current_state = 'Attacking'
-        else:
-            current_state = 'Idle'
-        
-        print(current_state)
